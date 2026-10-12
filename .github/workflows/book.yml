@@ -1,0 +1,48 @@
+name: pathe-autobook
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+    inputs:
+      simulation:
+        description: 'Simulation mode (true/false)'
+        required: false
+        default: 'false'
+
+jobs:
+  book:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Playwright
+        run: |
+          npm install playwright@1.64.0
+          npx playwright install --with-deps chromium
+
+      - name: Restore Pathé session
+        env:
+          PATHE_SESSION_B64: ${{ secrets.PATHE_SESSION_B64 }}
+        run: |
+          if [ -n "$PATHE_SESSION_B64" ]; then
+            echo "$PATHE_SESSION_B64" | base64 -d > pathe-session.json
+            echo "Session restored from secret"
+          else
+            echo "No session secret available"
+          fi
+
+      - name: Run booking
+        env:
+          PATHE_ACCOUNT_EMAIL: ${{ secrets.PATHE_ACCOUNT_EMAIL }}
+          PATHE_ACCOUNT_PASSWORD: ${{ secrets.PATHE_ACCOUNT_PASSWORD }}
+          PATHE_BOOKING_SIMULATION: ${{ github.event.inputs.simulation || 'false' }}
+          DUOCINE_API_URL: ${{ secrets.DUOCINE_API_URL || 'https://duocine.com' }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: node auto-book.mjs

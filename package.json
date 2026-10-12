@@ -1,0 +1,11 @@
+{
+  "name": "duocine-autobook",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "book": "node auto-book.mjs"
+  },
+  "dependencies": {
+    "playwright": "1.64.0"
+  }
+}
